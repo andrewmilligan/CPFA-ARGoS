@@ -13,6 +13,7 @@ class Pheromone {
 
         /* constructor function */
 		Pheromone(argos::CVector2 newLocation, std::vector<argos::CVector2> newTrail, argos::Real newTime, argos::Real newDecayRate);
+		Pheromone(argos::CVector2 newLocation, std::vector<argos::CVector2> newTrail, argos::Real newTime, argos::Real newDecayRate, size_t cid);
 
         /* public helper functions */
         void                         Update(argos::Real time);
@@ -21,6 +22,9 @@ class Pheromone {
         std::vector<argos::CVector2> GetTrail();
 		argos::Real                  GetWeight();
         bool                         IsActive();
+
+        const size_t & GetClusterAssociation() const;
+        void SetClusterAssociation(size_t cid);
 
 	private:
 
@@ -33,6 +37,8 @@ class Pheromone {
 		argos::Real decayRate;
 		argos::Real weight;
 		argos::Real threshold;
+
+    size_t cluster_association;
 };
 
 #endif /* IANT_PHEROMONE_H */

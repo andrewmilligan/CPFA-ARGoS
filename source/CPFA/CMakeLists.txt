@@ -23,6 +23,7 @@ target_link_libraries(CPFA_controller
 
 target_link_libraries(CPFA_loop_functions
                       CPFA_controller
+                      SmartFood
                       argos3core_simulator
                       argos3plugin_simulator_entities
                       argos3plugin_simulator_footbot

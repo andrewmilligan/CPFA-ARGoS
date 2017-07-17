@@ -1,7 +1,6 @@
 #ifndef CPFA_LOOP_FUNCTIONS_H
 #define CPFA_LOOP_FUNCTIONS_H
 
-#include "Base/SmartFood.h"
 #include <argos3/core/simulator/loop_functions.h>
 #include <argos3/plugins/robots/foot-bot/simulator/footbot_entity.h>
 #include <argos3/core/simulator/entity/floor_entity.h>
@@ -65,10 +64,6 @@ class CPFA_loop_functions : public argos::CLoopFunctions
 		double getRateOfLayingPheromone();
 		double getRateOfPheromoneDecay();
 
-    void AssociateWithCluster(size_t cid);
-    void DissociateFromCluster(size_t cid);
-    void LogControllerTarget(argos::CVector2 t);
-
 	protected:
 
 		void setScore(double s);
@@ -111,7 +106,7 @@ class CPFA_loop_functions : public argos::CLoopFunctions
 		argos::Real SearchRadiusSquared;
 
 		/* list variables for food & pheromones */
-		std::vector<SmartFood> FoodList;
+		std::vector<argos::CVector2> FoodList;
 		std::vector<argos::CColor>   FoodColoringList;
         map<string, argos::CVector2> FidelityList; 
 		std::vector<Pheromone>   PheromoneList;
@@ -135,10 +130,6 @@ class CPFA_loop_functions : public argos::CLoopFunctions
 		bool IsCollidingWithFood(argos::CVector2 p);
 		double score;
 		int PrintFinalScore;
-
-    std::vector<size_t> cluster_association_counts;
-    std::vector<size_t> active_cluster_ids;
-    std::vector<size_t> inactive_cluster_ids;
 };
 
 #endif /* CPFA_LOOP_FUNCTIONS_H */

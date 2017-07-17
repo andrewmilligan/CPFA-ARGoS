@@ -1,3 +1,9 @@
+### ANDREW ADDED:
+set(CMAKE_MODULE_PATH ${CMAKE_ROOT}/Modules)
+MESSAGE( STATUS "CMAKE_MODULE_PATH= " ${CMAKE_MODULE_PATH})
+MESSAGE( STATUS "CMAKE_SOURCE_DIR=  " ${CMAKE_SOURCE_DIR})
+### END ANDREW
+
 cmake_minimum_required(VERSION 2.8.12)
 project(CPFA-ARGoS)
 
@@ -52,13 +58,19 @@ include(ARGoSCheckQTOpenGL)
 # Find the ARGoS package
 find_package(PkgConfig)
 pkg_check_modules(ARGOS REQUIRED argos3_simulator)
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${ARGOS_PREFIX}/share/argos3/cmake)
+#set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${ARGOS_PREFIX}/share/argos3/cmake)
 
-# Find the GSL package.
-find_package(GSL REQUIRED)
+
+### ANDREW ADDED:
+MESSAGE( STATUS "CMAKE_MODULE_PATH= " ${CMAKE_MODULE_PATH})
+MESSAGE( STATUS "CMAKE_SOURCE_DIR=  " ${CMAKE_SOURCE_DIR})
+### END ANDREW
 
 # Find the LUA package.
 find_package(Lua52 REQUIRED)
+
+# Find the GSL package.
+#find_package(GSL REQUIRED)
 
 # Set ARGoS include directory.
 include_directories(${CMAKE_SOURCE_DIR} ${ARGOS_INCLUDE_DIRS} ${GSL_INCLUDE_DIR} ${LUA_INCLUDE_DIR} source)

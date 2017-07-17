@@ -24,6 +24,25 @@ Pheromone::Pheromone(argos::CVector2              newLocation,
     /* standardized initializations */
 	weight      = 1.0;
 	threshold   = 0.001;
+  cluster_association = 0;
+}
+
+Pheromone::Pheromone(argos::CVector2              newLocation,
+                             std::vector<argos::CVector2> newTrail,
+                             argos::Real                  newTime,
+                             argos::Real                  newDecayRate,
+                             size_t cid)
+{
+    /* required initializations */
+	location    = newLocation;
+  trail       = newTrail;
+	lastUpdated = newTime;
+	decayRate   = newDecayRate;
+
+    /* standardized initializations */
+	weight      = 1.0;
+	threshold   = 0.001;
+  cluster_association = cid;
 }
 
 /*****
@@ -71,4 +90,13 @@ argos::Real Pheromone::GetWeight() {
  *****/
 bool Pheromone::IsActive() {
 	return (weight > threshold);
+}
+
+
+const size_t & Pheromone::GetClusterAssociation() const {
+  return cluster_association;
+}
+
+void Pheromone::SetClusterAssociation(size_t cid) {
+  cluster_association = cid;
 }

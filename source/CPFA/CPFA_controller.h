@@ -31,6 +31,8 @@ class CPFA_controller : public BaseController {
 
 		void SetLoopFunctions(CPFA_loop_functions* lf);
 
+    const size_t & GetClusterAssociation() const;
+
 	private:
         string controllerID;
 		CPFA_loop_functions* LoopFunctions;
@@ -92,6 +94,11 @@ class CPFA_controller : public BaseController {
 		bool isUsingPheromone;
 
 		unsigned int survey_count;
+
+    size_t cluster_association;
+    void RegisterWithCluster(size_t cid);
+    void ClearClusterAssociation();
+    void LogTarget();
 };
 
 #endif /* CPFA_CONTROLLER_H */

@@ -77,8 +77,8 @@ void CPFA_qt_user_functions::DrawFood() {
 	Real x, y;
 
 	for(size_t i = 0; i < loopFunctions.FoodList.size(); i++) {
-		x = loopFunctions.FoodList[i].GetX();
-		y = loopFunctions.FoodList[i].GetY();
+		x = loopFunctions.FoodList[i].Position().GetX();
+		y = loopFunctions.FoodList[i].Position().GetY();
 		DrawCylinder(CVector3(x, y, 0.0), CQuaternion(), loopFunctions.FoodRadius, 0.025, loopFunctions.FoodColoringList[i]);
 	}
 }

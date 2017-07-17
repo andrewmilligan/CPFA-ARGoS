@@ -102,37 +102,6 @@ void CPFA_loop_functions::Init(argos::TConfigurationNode &node) {
 
 	SetFoodDistribution();
     ForageList.clear(); 
-
-  
-  // output headers
-  /*
-	ofstream log_output_stream;
-  std::string fname = "clusters_";
-  fname += std::to_string(RandomSeed);
-  fname += ".csv";
-	log_output_stream.open(fname, ios::out | ios::trunc);
-  log_output_stream << "time";
-  for(int i = 1; i <= (NumberOfClusters * 4); ++i) {
-    log_output_stream << ",c" << i;
-  }
-  log_output_stream << "\n";
-	log_output_stream.close();
-
-  fname = "posistions_";
-  fname += std::to_string(RandomSeed);
-  fname += ".csv";
-	log_output_stream.open(fname, ios::out | ios::trunc);
-  log_output_stream << "time,robot,x,y" << std::endl;
-	log_output_stream.close();
-  */
-
-	ofstream log_output_stream;
-  std::string fname = "targets_";
-  fname += std::to_string(RandomSeed);
-  fname += ".csv";
-	log_output_stream.open(fname, ios::out | ios::trunc);
-  log_output_stream << "time,x,y" << std::endl;
-	log_output_stream.close();
 }
 
 void CPFA_loop_functions::Reset() {
@@ -184,111 +153,6 @@ void CPFA_loop_functions::PreStep() {
 
 void CPFA_loop_functions::PostStep() {
 	// nothing... yet...
-
-  /*
-	GetSpace().GetEntitiesByType("foot-bot").size();
-	ofstream log_output_stream;
-  std::string fname = "positions_";
-  fname += std::to_string(RandomSeed);
-  fname += ".csv";
-	log_output_stream.open(fname, ios::app);
-  for(auto& bot : GetSpace().GetEntitiesByType("foot-bot")) {
-    CFootBotEntity* b = any_cast<CFootBotEntity*>(bot.second);
-    argos::CVector3 pos = b->GetEmbodiedEntity().GetOriginAnchor().Position;
-    log_output_stream << GetSpace().GetSimulationClock()
-      << "," << b->GetControllableEntity().GetController().GetId() << ","
-      << pos.GetX()
-      << ","
-      << pos.GetY()
-      << std::endl;
-  }
-	log_output_stream.close();
-
-
-  fname = "clusters_";
-  fname += std::to_string(RandomSeed);
-  fname += ".csv";
-	log_output_stream.open(fname, ios::app);
-  log_output_stream << GetSpace().GetSimulationClock();
-  for(int i = 1; i <= (NumberOfClusters * 4); ++i) {
-    log_output_stream << "," << cluster_association_counts[i];
-  }
-  log_output_stream << "\n";
-	log_output_stream.close();
-  */
-
-  /*
-  // now maybe mess with clusters every so often
-  if (GetSpace().GetSimulationClock() % 50 == 0) {
-    argos::Real randomNumber;
-    // first consider eliminating each cluster independently
-    int num_active = active_cluster_ids.size();
-    for (int i = 0; i < num_active;) {
-      randomNumber = RNG->Uniform(argos::CRange<argos::Real>(0.0, 1.0));
-      if (randomNumber < 0.001) {
-        // delete cluster
-        for (int j = 0; j < FoodList.size();) {
-          if (FoodList[j].GetClusterID() == active_cluster_ids[i]) {
-            FoodList.erase(FoodList.begin() + j);
-            FoodColoringList.erase(FoodColoringList.begin() + j);
-          } else {
-            ++j;
-          }
-        }
-
-        argos::LOG << "[" << GetSpace().GetSimulationClock()
-          << "] Deleting cluster "
-          << active_cluster_ids[i] << " ["
-          << active_cluster_ids.size() - 1 << "/"
-          << NumberOfClusters << "]\n";
-
-        inactive_cluster_ids.push_back(active_cluster_ids[i]);
-        active_cluster_ids.erase(active_cluster_ids.begin() + i);
-        num_active--;
-      } else {
-        ++i;
-      }
-    }
-
-    // next consider creating a cluster
-    if (active_cluster_ids.size() < NumberOfClusters) {
-      randomNumber = RNG->Uniform(argos::CRange<argos::Real>(0.0, 1.0));
-      argos::CVector2 placementPosition;
-      SmartFood food_item;
-      argos::Real foodOffset  = 3.0 * FoodRadius;
-      if (randomNumber < 0.01) {
-        // create cluster
-        size_t new_cluster_id = inactive_cluster_ids[0];
-
-        argos::LOG << "[" << GetSpace().GetSimulationClock()
-          << "] Creating cluster "
-          << new_cluster_id << " [" << active_cluster_ids.size() + 1
-          << "/" << NumberOfClusters << "]\n";
-
-        active_cluster_ids.push_back(inactive_cluster_ids[0]);
-        inactive_cluster_ids.erase(inactive_cluster_ids.begin());
-        placementPosition.Set(RNG->Uniform(ForageRangeX), RNG->Uniform(ForageRangeY));
-
-        while(IsOutOfBounds(placementPosition, ClusterLengthY, ClusterWidthX)) {
-          placementPosition.Set(RNG->Uniform(ForageRangeX), RNG->Uniform(ForageRangeY));
-        }
-
-        for(size_t j = 0; j < ClusterLengthY; j++) {
-          for(size_t k = 0; k < ClusterWidthX; k++) {
-            // we reserve cluster ID 0 for being an idependent agent
-            food_item = SmartFood(new_cluster_id, placementPosition);
-            FoodList.push_back(food_item);
-            FoodColoringList.push_back(argos::CColor::BLACK);
-            placementPosition.SetX(placementPosition.GetX() + foodOffset);
-          }
-
-          placementPosition.SetX(placementPosition.GetX() - (ClusterWidthX * foodOffset));
-          placementPosition.SetY(placementPosition.GetY() + foodOffset);
-        }
-      }
-    }
-  }
-  */
 }
 
 bool CPFA_loop_functions::IsExperimentFinished() {
@@ -314,7 +178,7 @@ bool CPFA_loop_functions::IsExperimentFinished() {
 }
 
 void CPFA_loop_functions::PostExperiment() {
-	//if (PrintFinalScore == 1) printf("%f, %f\n", getSimTimeInSeconds(), score);
+	if (PrintFinalScore == 1) printf("%f, %f\n", getSimTimeInSeconds(), score);
 }
 
 argos::CColor CPFA_loop_functions::GetFloorColor(const argos::CVector2 &c_pos_on_floor) {
@@ -385,24 +249,10 @@ void CPFA_loop_functions::ClusterFoodDistribution() {
 	size_t          foodToPlace = NumberOfClusters * ClusterWidthX * ClusterLengthY;
 	size_t          foodPlaced = 0;
 	argos::CVector2 placementPosition;
-  SmartFood food_item;
 
 	FoodItemCount = foodToPlace;
 
-  // we reserve cluster 0, so just say nobody's in it
-  // We also use more than the total number of clusters so that we increase the
-  // downtime for a cluster ID when one is destroyed
-  cluster_association_counts.push_back((size_t)getNumberOfRobots());
-  for (size_t i = 0; i < (NumberOfClusters * 4); ++i) {
-    cluster_association_counts.push_back(0);
-    if (i < NumberOfClusters) {
-      active_cluster_ids.push_back(i+1); // start with first group active
-    } else {
-      inactive_cluster_ids.push_back(i+1); // rest inactive
-    }
-  }
-
-	for (size_t i = 0; i < NumberOfClusters; i++) {
+	for(size_t i = 0; i < NumberOfClusters; i++) {
 		placementPosition.Set(RNG->Uniform(ForageRangeX), RNG->Uniform(ForageRangeY));
 
 		while(IsOutOfBounds(placementPosition, ClusterLengthY, ClusterWidthX)) {
@@ -425,9 +275,7 @@ void CPFA_loop_functions::ClusterFoodDistribution() {
 				AddEntity(*b);
 				*/
 
-        // we reserve cluster ID 0 for being an idependent agent
-        food_item = SmartFood(active_cluster_ids[i], placementPosition);
-				FoodList.push_back(food_item);
+				FoodList.push_back(placementPosition);
 				FoodColoringList.push_back(argos::CColor::BLACK);
 				placementPosition.SetX(placementPosition.GetX() + foodOffset);
 			}
@@ -582,7 +430,7 @@ bool CPFA_loop_functions::IsCollidingWithFood(argos::CVector2 p) {
 	argos::Real FRPB_squared = foodRadiusPlusBuffer * foodRadiusPlusBuffer;
 
 	for(size_t i = 0; i < FoodList.size(); i++) {
-		if((p - FoodList[i].Position()).SquareLength() < FRPB_squared) return true;
+		if((p - FoodList[i]).SquareLength() < FRPB_squared) return true;
 	}
 
 	return false;
@@ -652,25 +500,5 @@ void CPFA_loop_functions::ConfigureFromGenome(Real* g)
 	RateOfLayingPheromone             = g[5];
 	RateOfPheromoneDecay              = g[6];
 }
-
-void CPFA_loop_functions::AssociateWithCluster(size_t cid) {
-  //cluster_association_counts[cid]++;
-}
-
-void CPFA_loop_functions::DissociateFromCluster(size_t cid) {
-  //cluster_association_counts[cid]--;
-}
-
-void CPFA_loop_functions::LogControllerTarget(argos::CVector2 t) {
-	ofstream log_output_stream;
-  std::string fname = "targets_";
-  fname += std::to_string(RandomSeed);
-  fname += ".csv";
-	log_output_stream.open(fname, ios::app);
-  log_output_stream << GetSpace().GetSimulationClock() << ","
-    << t.GetX() << "," << t.GetY() << std::endl;
-	log_output_stream.close();
-}
-
 
 REGISTER_LOOP_FUNCTIONS(CPFA_loop_functions, "CPFA_loop_functions")

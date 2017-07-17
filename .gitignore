@@ -1,6 +1,10 @@
 # OS X
 .DS_Store
 
+# ignore data directory, but not R scripts
+data/**
+!data/*.R
+
 # Object files
 .o
 .a

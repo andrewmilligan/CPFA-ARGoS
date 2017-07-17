@@ -15,7 +15,8 @@ CPFA_controller::CPFA_controller() :
 	survey_count(0),
 	isUsingPheromone(0),
     SiteFidelityPosition(1000, 1000),
-    updateFidelity(false)
+    updateFidelity(false),
+    cluster_association(0)
 {
 }
 
@@ -118,6 +119,8 @@ void CPFA_controller::Reset() {
 	isHoldingFood = false;
 	isUsingSiteFidelity = false;
 	isGivingUpSearch = false;
+
+  cluster_association = 0;
 }
 
 bool CPFA_controller::IsHoldingFood() {
@@ -264,6 +267,7 @@ void CPFA_controller::Departing()
             
 			  SetIsHeadingToNest(false);
 			  SetTarget(turn_vector + GetPosition());
+        LogTarget();
 		  }
     else if(distanceToTarget < TargetDistanceTolerance) {
      SetRandomSearchLocation();
@@ -316,6 +320,7 @@ void CPFA_controller::Searching() {
 	         LoopFunctions->FidelityList.erase(controllerID); 
              isUsingSiteFidelity = false; 
              updateFidelity = false; 
+        ClearClusterAssociation();
 				CPFA_state = RETURNING;
 			
 				/*
@@ -357,6 +362,7 @@ void CPFA_controller::Searching() {
 				*/
 				SetIsHeadingToNest(false);
 				SetTarget(turn_vector + GetPosition());
+        LogTarget();
 			}
 			// informed search
 			else if(isInformed == true) {
@@ -394,6 +400,7 @@ void CPFA_controller::Searching() {
 	    			log_output_stream.close();
 	    			*/
 				    SetTarget(turn_vector + GetPosition());
+            LogTarget();
 				}
 			}
 		}
@@ -422,6 +429,7 @@ void CPFA_controller::Surveying() {
 			
 		SetIsHeadingToNest(true); // Turn off error for this
 		SetTarget(turn_vector + GetPosition());
+    LogTarget();
 		/*
 		ofstream log_output_stream;
 		log_output_stream.open("log.txt", ios::app);
@@ -460,6 +468,10 @@ void CPFA_controller::Returning() {
 		argos::Real r1 = RNG->Uniform(argos::CRange<argos::Real>(0.0, 1.0));
 		argos::Real r2 = RNG->Uniform(argos::CRange<argos::Real>(0.0, 1.0));
 
+    // if we're associated, dissociate
+    size_t old_cluster_association = cluster_association;
+    ClearClusterAssociation();
+
 		if (isHoldingFood) { 
 	          num_targets_collected++;
 	          LoopFunctions->currNumCollectedFood++;
@@ -467,7 +479,9 @@ void CPFA_controller::Returning() {
 			if(poissonCDF_pLayRate > r1 && updateFidelity) {
 				TrailToShare.push_back(LoopFunctions->NestPosition); // For drawing the waypoints
 				argos::Real timeInSeconds = (argos::Real)(SimulationTick() / SimulationTicksPerSecond());
-				Pheromone sharedPheromone(SiteFidelityPosition, TrailToShare, timeInSeconds, LoopFunctions->RateOfPheromoneDecay);
+				Pheromone sharedPheromone(SiteFidelityPosition, TrailToShare,
+            timeInSeconds, LoopFunctions->RateOfPheromoneDecay,
+            old_cluster_association);
 				LoopFunctions->PheromoneList.push_back(sharedPheromone);
 				TrailToShare.clear();
 				sharedPheromone.Deactivate(); // make sure this won't get re-added later...
@@ -487,9 +501,17 @@ void CPFA_controller::Returning() {
 			SetIsHeadingToNest(false);
 			SetTarget(SiteFidelityPosition);
 			isInformed = true;
+
+      // log foraging target
+      LogTarget();
+
+      // if we use site fidelity, stay associated with the same cluster
+      RegisterWithCluster(old_cluster_association);
 		}
 		// use pheromone waypoints
 		else if(SetTargetPheromone() == true) {
+      // SetTargetPheromone() should also handle cluster association and target
+      // logging.
 			//log_output_stream << "Using site pheremone" << endl;	    
 			isInformed = true;
 			isUsingSiteFidelity = false;
@@ -500,6 +522,11 @@ void CPFA_controller::Returning() {
 			SetRandomSearchLocation();
 			isInformed = false;
 			isUsingSiteFidelity = false;
+
+      // we're already dissociated, so we're good
+      // If we set a random target, we just pick a point on the wall and walk
+      // to it until we randomly stop walking and start searching. We want to
+      // log that place, not the point on the wall, so we log when we give up.
 		}
 
 		// Record that a target has been retrieved
@@ -572,16 +599,27 @@ void CPFA_controller::SetHoldingFood() {
 		// No, the iAnt isn't holding food. Check if we have found food at our
 		// current position and update the food list if we have.
 
-		std::vector<argos::CVector2> newFoodList;
+		std::vector<SmartFood> newFoodList;
 		std::vector<argos::CColor> newFoodColoringList;
 		size_t i = 0, j = 0;
       if(CPFA_state != RETURNING){
 		for(i = 0; i < LoopFunctions->FoodList.size(); i++) {
-			if((GetPosition() - LoopFunctions->FoodList[i]).SquareLength() < FoodDistanceTolerance ) {
+			if((GetPosition() - LoopFunctions->FoodList[i].Position()).SquareLength() < FoodDistanceTolerance ) {
 				// We found food! Calculate the nearby food density.
 				isHoldingFood = true;
+
+        //argos::LOG << "Picked up seed " << LoopFunctions->FoodList[i].GetID()
+        //  << " from cluster " << LoopFunctions->FoodList[i].GetClusterID()
+        //  << "\n";
+
+        RegisterWithCluster(LoopFunctions->FoodList[i].GetClusterID());
 				CPFA_state = SURVEYING;
+
+        // original sets j=i+1 to remove this seed. Setting j=i makes food
+        // constant
 				j = i + 1;
+        //j = i;
+
 				break;
 			} else {
 				//Return this unfound-food position to the list
@@ -642,7 +680,7 @@ void CPFA_controller::SetLocalResourceDensity() {
 
 	/* Calculate resource density based on the global food list positions. */
 	for(size_t i = 0; i < LoopFunctions->FoodList.size(); i++) {
-		distance = GetPosition() - LoopFunctions->FoodList[i];
+		distance = GetPosition() - LoopFunctions->FoodList[i].Position();
 
 		if(distance.SquareLength() < LoopFunctions->SearchRadiusSquared*2) {
 			ResourceDensity++;
@@ -742,6 +780,10 @@ bool CPFA_controller::SetTargetPheromone() {
 			/* We've chosen a pheromone! */
 			SetIsHeadingToNest(false);
 			SetTarget(LoopFunctions->PheromoneList[i].GetLocation());
+      LogTarget();
+
+      RegisterWithCluster(LoopFunctions->PheromoneList[i].GetClusterAssociation());
+
 			TrailToFollow = LoopFunctions->PheromoneList[i].GetTrail();
 			isPheromoneSet = true;
 			/* If we pick a pheromone, break out of this loop. */
@@ -837,6 +879,28 @@ void CPFA_controller::UpdateTargetRayList() {
 			// loopFunctions.TargetRayList.push_back(myTrail);
 		}
 	}
+}
+
+const size_t & CPFA_controller::GetClusterAssociation() const {
+  return cluster_association;
+}
+
+void CPFA_controller::ClearClusterAssociation() {
+  RegisterWithCluster(0);
+}
+
+void CPFA_controller::RegisterWithCluster(size_t cid) {
+  //argos::LOG << "Registering with cluster " << cid 
+  //  << " from cluster " << cluster_association << "\n";
+  if (cluster_association != cid) {
+    //LoopFunctions->DissociateFromCluster(cluster_association);
+    cluster_association = cid;
+    //LoopFunctions->AssociateWithCluster(cluster_association);
+  }
+}
+
+void CPFA_controller::LogTarget() {
+  LoopFunctions->LogControllerTarget(GetTarget());
 }
 
 REGISTER_CONTROLLER(CPFA_controller, "CPFA_controller")
