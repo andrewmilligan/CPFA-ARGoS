@@ -4,6 +4,7 @@ library(RColorBrewer)
 library(reshape2)
 library(viridis)
 library(Cairo)
+library(plotly)
 
 sharkfins <- function(fname, title="") {
   data.orig <- read.csv(fname, comment.char='#')
@@ -86,6 +87,21 @@ position.map <- function(fname, title="", point=F, time.start=0, time.len=0) {
                    scale_colour_economist()
   }
 
+
+  return(pmap)
+}
+
+
+position.surf <- function(fname, title="", point=F, time.start=0, time.len=0) {
+  data.orig <- read.csv(fname, comment.char='#')
+  nr <- 0.25
+
+  data <- subset(data.orig, time >= time.start)
+  if (time.len > 0) {
+    data <- subset(data, time < (time.start + time.len))
+  }
+
+  pmap <- plot_ly(z=data)
 
   return(pmap)
 }

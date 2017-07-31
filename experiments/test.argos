@@ -73,7 +73,7 @@
 	     DrawIDs = "1"
 	     DrawTrails = "1"
 	     DrawTargetRays = "0"
-	     FoodDistribution = "1"
+	     FoodDistribution = "2"
 	     FoodItemCount = "256"
 	     NumberOfClusters = "4"
 	     ClusterWidthX = "8"
@@ -104,6 +104,10 @@
         </foot-bot>
       </entity>
     </distribute>
+
+    <box id="foo" size="1,1,0.01" movable="false">
+      <body position="2,2,0" orientation="0,0,0"/>
+    </box>
 
   </arena>
 

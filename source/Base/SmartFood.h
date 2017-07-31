@@ -7,8 +7,9 @@ class SmartFood {
   
   public:
     SmartFood();
-    SmartFood(const argos::CVector2 & p);
-    SmartFood(size_t cid, const argos::CVector2 & p);
+    SmartFood(argos::Real r);
+    SmartFood(argos::Real r, const argos::CVector2 & p);
+    SmartFood(argos::Real r, const argos::CVector2 & p, size_t cid);
 
     const size_t & GetID() const;
     const size_t & GetClusterID() const;
@@ -16,13 +17,19 @@ class SmartFood {
     void SetID(size_t i);
     void SetClusterID(size_t ci);
 
+    void SetPosition(argos::CVector2 & pos);
     argos::CVector2 & Position(); 
+
+    void SetRadius(argos::Real r);
+    argos::Real & Radius();
 
 
   private:
     size_t id;
     size_t cluster_id;
     argos::CVector2 position;
+
+    argos::Real radius;
 
     static size_t next_id;
 

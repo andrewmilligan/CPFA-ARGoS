@@ -2,6 +2,7 @@
 .DS_Store
 
 # ignore data directory, but not R scripts
+*.csv
 data/**
 !data/*.R
 

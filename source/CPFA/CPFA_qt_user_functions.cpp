@@ -70,6 +70,8 @@ void CPFA_qt_user_functions::DrawNest() {
 
 	/* Draw the nest on the arena. */
 	DrawCircle(nest_3d, CQuaternion(), loopFunctions.NestRadius, CColor::GRAY50);
+
+  DrawBox(CVector3(2,2,0.01), CQuaternion(), CVector3(1,1,0), CColor::GRAY50);
 }
 
 void CPFA_qt_user_functions::DrawFood() {

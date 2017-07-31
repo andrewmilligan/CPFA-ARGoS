@@ -595,65 +595,24 @@ void CPFA_controller::SetRandomSearchLocation() {
  *****/
 void CPFA_controller::SetHoldingFood() {
 	// Is the iAnt already holding food?
-	if(IsHoldingFood() == false) {
+	if (IsHoldingFood() == false) {
 		// No, the iAnt isn't holding food. Check if we have found food at our
 		// current position and update the food list if we have.
 
-		std::vector<SmartFood> newFoodList;
-		std::vector<argos::CColor> newFoodColoringList;
-		size_t i = 0, j = 0;
-      if(CPFA_state != RETURNING){
-		for(i = 0; i < LoopFunctions->FoodList.size(); i++) {
-			if((GetPosition() - LoopFunctions->FoodList[i].Position()).SquareLength() < FoodDistanceTolerance ) {
-				// We found food! Calculate the nearby food density.
+    if (CPFA_state != RETURNING){
+      if (LoopFunctions->IsFoodHere(GetPosition(), FoodDistanceTolerance)) {
 				isHoldingFood = true;
-
-        //argos::LOG << "Picked up seed " << LoopFunctions->FoodList[i].GetID()
-        //  << " from cluster " << LoopFunctions->FoodList[i].GetClusterID()
-        //  << "\n";
-
-        RegisterWithCluster(LoopFunctions->FoodList[i].GetClusterID());
 				CPFA_state = SURVEYING;
-
-        // original sets j=i+1 to remove this seed. Setting j=i makes food
-        // constant
-				j = i + 1;
-        //j = i;
-
-				break;
-			} else {
-				//Return this unfound-food position to the list
-				newFoodList.push_back(LoopFunctions->FoodList[i]);
-				newFoodColoringList.push_back(LoopFunctions->FoodColoringList[i]);
-			}
-		}
-
-		for(; j < LoopFunctions->FoodList.size(); j++) {
-			newFoodList.push_back(LoopFunctions->FoodList[j]);
-			newFoodColoringList.push_back(LoopFunctions->FoodColoringList[j]);
-		}
-}
-		// We picked up food. Update the food list minus what we picked up.
-		if(IsHoldingFood() == true) {
-			SetIsHeadingToNest(true);
-			SetTarget(LoopFunctions->NestPosition);
-			LoopFunctions->FoodList = newFoodList;
-         LoopFunctions->FoodColoringList = newFoodColoringList; //qilu 09/12/2016
-			SetLocalResourceDensity();
-		} 
-	}
-		
-	// This shouldn't be checked here ---
-	// Drop off food: We are holding food and have reached the nest.
-	//else if((GetPosition() - LoopFunctions->NestPosition).SquareLength() < LoopFunctions->NestRadiusSquared) {
-	//    isHoldingFood = false;
-	// }
-
-	// We are carrying food and haven't reached the nest, keep building up the
-	// pheromone trail attached to this found food item.
-	if(IsHoldingFood() == true && SimulationTick() % LoopFunctions->DrawDensityRate == 0) {
-			TrailToShare.push_back(GetPosition());
-	}
+        SetIsHeadingToNest(true);
+        SetTarget(LoopFunctions->NestPosition);
+        SetLocalResourceDensity();
+      }
+    }
+  } else if (SimulationTick() % LoopFunctions->DrawDensityRate == 0) {
+    // We are carrying food and haven't reached the nest, keep building up the
+    // pheromone trail attached to this found food item.
+    TrailToShare.push_back(GetPosition());
+  }
 }
 
 /*****

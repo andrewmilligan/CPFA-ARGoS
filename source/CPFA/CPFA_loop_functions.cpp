@@ -71,7 +71,7 @@ void CPFA_loop_functions::Init(argos::TConfigurationNode &node) {
 	argos::GetNodeAttribute(settings_node, "ClusterLengthY", ClusterLengthY);
 	argos::GetNodeAttribute(settings_node, "FoodRadius", FoodRadius);
 	argos::GetNodeAttribute(settings_node, "NestElevation", NestElevation);
-	
+
 	FoodRadiusSquared = FoodRadius*FoodRadius;
 
     //Number of distributed foods
@@ -365,6 +365,8 @@ void CPFA_loop_functions::SetFoodDistribution() {
 void CPFA_loop_functions::RandomFoodDistribution() {
 	FoodList.clear();
 
+  SmartFood food_item;
+
 	argos::CVector2 placementPosition;
 
 	for(size_t i = 0; i < FoodItemCount; i++) {
@@ -374,7 +376,8 @@ void CPFA_loop_functions::RandomFoodDistribution() {
 			placementPosition.Set(RNG->Uniform(ForageRangeX), RNG->Uniform(ForageRangeY));
 		}
 
-		FoodList.push_back(placementPosition);
+    food_item = SmartFood(FoodRadius, placementPosition, i+1);
+		FoodList.push_back(food_item);
 		FoodColoringList.push_back(argos::CColor::BLACK);
 	}
 }
@@ -426,7 +429,7 @@ void CPFA_loop_functions::ClusterFoodDistribution() {
 				*/
 
         // we reserve cluster ID 0 for being an idependent agent
-        food_item = SmartFood(active_cluster_ids[i], placementPosition);
+        food_item = SmartFood(FoodRadius, placementPosition, active_cluster_ids[i]);
 				FoodList.push_back(food_item);
 				FoodColoringList.push_back(argos::CColor::BLACK);
 				placementPosition.SetX(placementPosition.GetX() + foodOffset);
@@ -440,6 +443,9 @@ void CPFA_loop_functions::ClusterFoodDistribution() {
 
 void CPFA_loop_functions::PowerLawFoodDistribution() {
  FoodList.clear();
+
+  SmartFood food_item;
+
 	argos::Real foodOffset     = 3.0 * FoodRadius;
 	size_t      foodPlaced     = 0;
 	size_t      powerLawLength = 1;
@@ -518,7 +524,8 @@ void CPFA_loop_functions::PowerLawFoodDistribution() {
 			for(size_t j = 0; j < clusterSides[h]; j++) {
 				for(size_t k = 0; k < clusterSides[h]; k++) {
 					foodPlaced++;
-					FoodList.push_back(placementPosition);
+          food_item = SmartFood(FoodRadius, placementPosition); // TODO: cluster ID
+					FoodList.push_back(food_item);
 					FoodColoringList.push_back(argos::CColor::BLACK);
 					placementPosition.SetX(placementPosition.GetX() + foodOffset);
                     if (foodPlaced == singleClusterCount + h * otherClusterCount) break;
@@ -672,5 +679,51 @@ void CPFA_loop_functions::LogControllerTarget(argos::CVector2 t) {
 	log_output_stream.close();
 }
 
+bool CPFA_loop_functions::IsFoodHere(const argos::CVector2& p, const argos::Real& tol) {
+  return IsDiscreteFoodHere(p, tol);
+}
+
+bool CPFA_loop_functions::IsDiscreteFoodHere(const argos::CVector2& p, const argos::Real& tol) {
+  bool foundFood = false;
+  std::vector<SmartFood> newFoodList;
+  std::vector<argos::CColor> newFoodColoringList;
+  size_t i = 0, j = 0;
+  for(i = 0; i < FoodList.size(); i++) {
+    if((p - FoodList[i].Position()).SquareLength() < tol) {
+      // We found food! Calculate the nearby food density.
+      foundFood = true;
+
+      //RegisterWithCluster(LoopFunctions->FoodList[i].GetClusterID());
+      //CPFA_state = SURVEYING;
+
+      // original sets j=i+1 to remove this seed. Setting j=i makes food
+      // constant
+      j = i + 1;
+      //j = i;
+
+      break;
+    } else {
+      //Return this unfound-food position to the list
+      newFoodList.push_back(FoodList[i]);
+      newFoodColoringList.push_back(FoodColoringList[i]);
+    }
+  }
+
+  for(; j < FoodList.size(); j++) {
+    newFoodList.push_back(FoodList[j]);
+    newFoodColoringList.push_back(FoodColoringList[j]);
+  }
+
+  if(foundFood) {
+    FoodList = newFoodList;
+    FoodColoringList = newFoodColoringList;
+  } 
+
+  return foundFood;
+}
+
+bool CPFA_loop_functions::IsPDFFoodHere(const argos::CVector2& p, const argos::Real& tol) {
+  argos::Real x;
+}
 
 REGISTER_LOOP_FUNCTIONS(CPFA_loop_functions, "CPFA_loop_functions")

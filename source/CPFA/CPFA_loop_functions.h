@@ -124,6 +124,8 @@ class CPFA_loop_functions : public argos::CLoopFunctions
         vector<size_t>			ForageList;
 		argos::CVector2 NestPosition;
 
+    bool IsFoodHere(const argos::CVector2& p, const argos::Real& tol);
+
 	private:
 
 		/* private helper functions */
@@ -135,6 +137,9 @@ class CPFA_loop_functions : public argos::CLoopFunctions
 		bool IsCollidingWithFood(argos::CVector2 p);
 		double score;
 		int PrintFinalScore;
+
+    bool IsDiscreteFoodHere(const argos::CVector2& p, const argos::Real& tol);
+    bool IsPDFFoodHere(const argos::CVector2& p, const argos::Real& tol);
 
     std::vector<size_t> cluster_association_counts;
     std::vector<size_t> active_cluster_ids;
