@@ -74,10 +74,11 @@
 	     DrawTrails = "1"
 	     DrawTargetRays = "0"
 	     FoodDistribution = "1"
+       FoodPDF = "1"
 	     FoodItemCount = "5120"
 	     NumberOfClusters = "5"
-	     ClusterWidthX = "16"
-	     ClusterLengthY = "16"
+	     ClusterWidthX = "2"
+	     ClusterLengthY = "2"
 	     PowerRank = "4"
 	     FoodRadius = "0.05"
 	     NestRadius = "0.25"
@@ -123,8 +124,7 @@
   <!-- * Visualization * -->
   <!-- ****************** -->
 
-  <visualization/>
-
+  <visulization/>
   <!--
   <visualization>
 

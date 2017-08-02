@@ -70,19 +70,30 @@ void CPFA_qt_user_functions::DrawNest() {
 
 	/* Draw the nest on the arena. */
 	DrawCircle(nest_3d, CQuaternion(), loopFunctions.NestRadius, CColor::GRAY50);
-
-  DrawBox(CVector3(2,2,0.01), CQuaternion(), CVector3(1,1,0), CColor::GRAY50);
 }
 
 void CPFA_qt_user_functions::DrawFood() {
+  Real x, y;
+  for(size_t i = 0; i < loopFunctions.FoodList.size(); i++) {
+    x = loopFunctions.FoodList[i].Position().GetX();
+    y = loopFunctions.FoodList[i].Position().GetY();
+    DrawCylinder(CVector3(x, y, 0.0), CQuaternion(), loopFunctions.FoodRadius, 0.025, loopFunctions.FoodColoringList[i]);
+  }
 
-	Real x, y;
+  if (loopFunctions.FoodPDF == 1) {
+    for (size_t i = 0; i < loopFunctions.SectorList.size(); ++i) {
+      x = loopFunctions.SectorList.at(i).Position().GetX();
+      y = loopFunctions.SectorList.at(i).Position().GetY();
+      DrawPolygon(CVector3(0,0,0.01), CQuaternion(), loopFunctions.SectorList.at(i).GetCorners(), CColor::GRAY50, true);
+    }
+  }
 
-	for(size_t i = 0; i < loopFunctions.FoodList.size(); i++) {
-		x = loopFunctions.FoodList[i].Position().GetX();
-		y = loopFunctions.FoodList[i].Position().GetY();
-		DrawCylinder(CVector3(x, y, 0.0), CQuaternion(), loopFunctions.FoodRadius, 0.025, loopFunctions.FoodColoringList[i]);
-	}
+  std::vector<argos::CVector2> c;
+  c = {argos::CVector2(-0.5, 0.5),
+    argos::CVector2(0.5, 1.5),
+    argos::CVector2(1.5, 1.5),
+    argos::CVector2(1.5, 0.5)};
+  //DrawPolygon(CVector3(1,1,0.01), CQuaternion(), c, CColor::GRAY50, true);
 }
 
 void CPFA_qt_user_functions::DrawFidelity() {

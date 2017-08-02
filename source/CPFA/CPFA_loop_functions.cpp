@@ -14,6 +14,7 @@ CPFA_loop_functions::CPFA_loop_functions() :
 	DrawTrails(1),
 	DrawTargetRays(1),
 	FoodDistribution(2),
+	FoodPDF(0),
 	FoodItemCount(256),
 	NumberOfClusters(4),
 	ClusterWidthX(8),
@@ -65,6 +66,7 @@ void CPFA_loop_functions::Init(argos::TConfigurationNode &node) {
 	argos::GetNodeAttribute(settings_node, "DrawTrails", DrawTrails);
 	argos::GetNodeAttribute(settings_node, "DrawTargetRays", DrawTargetRays);
 	argos::GetNodeAttribute(settings_node, "FoodDistribution", FoodDistribution);
+	argos::GetNodeAttribute(settings_node, "FoodPDF", FoodPDF);
 	argos::GetNodeAttribute(settings_node, "FoodItemCount", FoodItemCount);
 	argos::GetNodeAttribute(settings_node, "NumberOfClusters", NumberOfClusters);
 	argos::GetNodeAttribute(settings_node, "ClusterWidthX", ClusterWidthX);
@@ -147,6 +149,7 @@ void CPFA_loop_functions::Reset() {
   score = 0.0;
 
 	FoodList.clear();
+  SectorList.clear();
 	FoodColoringList.clear();
 	PheromoneList.clear();
 	FidelityList.clear();
@@ -352,13 +355,81 @@ void CPFA_loop_functions::SetFoodDistribution() {
 			RandomFoodDistribution();
 			break;
 		case 1:
-			ClusterFoodDistribution();
+      if (FoodPDF == 0) {
+        ClusterFoodDistribution();
+      } else {
+        ClusterFoodDistributionPDF();
+      }
 			break;
 		case 2:
 			PowerLawFoodDistribution();
 			break;
 		default:
 			argos::LOGERR << "ERROR: Invalid food distribution in XML file.\n";
+	}
+}
+
+void CPFA_loop_functions::ClusterFoodDistributionPDF() {
+  FoodList.clear();
+  FoodColoringList.clear();
+  SectorList.clear();
+	argos::Real     sectorOffset  = 1;
+	size_t          foodToPlace = NumberOfClusters * ClusterWidthX * ClusterLengthY;
+	size_t          foodPlaced = 0;
+	argos::CVector2 placementPosition;
+  SectorFood food_sector;
+  SmartFood food_item;
+
+	FoodItemCount = foodToPlace;
+
+  argos::Real seed_prob = 0.6;
+
+  // we reserve cluster 0, so just say nobody's in it
+  // We also use more than the total number of clusters so that we increase the
+  // downtime for a cluster ID when one is destroyed
+  cluster_association_counts.push_back((size_t)getNumberOfRobots());
+  for (size_t i = 0; i < (NumberOfClusters * 4); ++i) {
+    cluster_association_counts.push_back(0);
+    if (i < NumberOfClusters) {
+      active_cluster_ids.push_back(i+1); // start with first group active
+    } else {
+      inactive_cluster_ids.push_back(i+1); // rest inactive
+    }
+  }
+
+	for (size_t i = 0; i < NumberOfClusters; i++) {
+		placementPosition.Set(RNG->Uniform(ForageRangeX), RNG->Uniform(ForageRangeY));
+
+		while(IsOutOfBounds(placementPosition, ClusterLengthY, ClusterWidthX)) {
+			placementPosition.Set(RNG->Uniform(ForageRangeX), RNG->Uniform(ForageRangeY));
+		}
+
+		for(size_t j = 0; j < ClusterLengthY; j++) {
+			for(size_t k = 0; k < ClusterWidthX; k++) {
+				foodPlaced++;
+
+        argos::CVector2 lleft(std::floor(placementPosition.GetX()),
+            std::floor(placementPosition.GetY()));
+        argos::CVector2 uright(std::floor(placementPosition.GetX()) + 1,
+            std::floor(placementPosition.GetY()) + 1);
+
+        argos::Real mx, my;
+        mx = (lleft.GetX() + uright.GetX()) / 2.0;
+        my = (lleft.GetY() + uright.GetY()) / 2.0;
+        argos::CVector2 mid(mx, my);
+
+        food_sector = SectorFood(lleft, uright, seed_prob);
+				SectorList.push_back(food_sector);
+
+        food_item = SmartFood(FoodRadius, mid);
+        FoodList.push_back(food_item);
+				FoodColoringList.push_back(argos::CColor::BLACK);
+				placementPosition.SetX(placementPosition.GetX() + sectorOffset);
+			}
+
+			placementPosition.SetX(placementPosition.GetX() - (ClusterWidthX * sectorOffset));
+			placementPosition.SetY(placementPosition.GetY() + sectorOffset);
+		}
 	}
 }
 
@@ -544,16 +615,26 @@ void CPFA_loop_functions::PowerLawFoodDistribution() {
 
 bool CPFA_loop_functions::IsOutOfBounds(argos::CVector2 p, size_t length, size_t width) {
 	argos::CVector2 placementPosition = p;
+  argos::Real x_min, x_max, y_min, y_max;
 
-	argos::Real foodOffset   = 3.0 * FoodRadius;
-	argos::Real widthOffset  = 3.0 * FoodRadius * (argos::Real)width;
-	argos::Real lengthOffset = 3.0 * FoodRadius * (argos::Real)length;
+  argos::Real foodOffset   = 3.0 * FoodRadius;
 
-	argos::Real x_min = p.GetX() - FoodRadius;
-	argos::Real x_max = p.GetX() + FoodRadius + widthOffset;
+  if (FoodPDF == 0) {
+    argos::Real widthOffset  = 3.0 * FoodRadius * (argos::Real)width;
+    argos::Real lengthOffset = 3.0 * FoodRadius * (argos::Real)length;
 
-	argos::Real y_min = p.GetY() - FoodRadius;
-	argos::Real y_max = p.GetY() + FoodRadius + lengthOffset;
+    x_min = p.GetX() - FoodRadius;
+    x_max = p.GetX() + FoodRadius + widthOffset;
+
+    y_min = p.GetY() - FoodRadius;
+    y_max = p.GetY() + FoodRadius + lengthOffset;
+  } else {
+    x_min = std::floor(p.GetX());
+    x_max = x_min + width;
+
+    y_min = std::floor(p.GetY());
+    y_max = y_min + length;
+  }
 
 	if((x_min < (ForageRangeX.GetMin() + FoodRadius))
 			|| (x_max > (ForageRangeX.GetMax() - FoodRadius)) ||
@@ -563,28 +644,56 @@ bool CPFA_loop_functions::IsOutOfBounds(argos::CVector2 p, size_t length, size_t
 		return true;
 	}
 
+  argos::Real offset;
+  if (FoodPDF == 0) {
+    offset = foodOffset;
+  } else {
+    offset = 1;
+  }
+
 	for(size_t j = 0; j < length; j++) {
 		for(size_t k = 0; k < width; k++) {
 			if(IsCollidingWithFood(placementPosition)) return true;
 			if(IsCollidingWithNest(placementPosition)) return true;
-			placementPosition.SetX(placementPosition.GetX() + foodOffset);
+			placementPosition.SetX(placementPosition.GetX() + offset);
 		}
 
-		placementPosition.SetX(placementPosition.GetX() - (width * foodOffset));
-		placementPosition.SetY(placementPosition.GetY() + foodOffset);
+		placementPosition.SetX(placementPosition.GetX() - (width * offset));
+		placementPosition.SetY(placementPosition.GetY() + offset);
 	}
 
 	return false;
 }
 
 bool CPFA_loop_functions::IsCollidingWithNest(argos::CVector2 p) {
+  if (FoodPDF == 0) {
+    return IsCollidingWithNestDiscrete(p);
+  } else {
+    return IsCollidingWithNestPDF(p);
+  }
+}
+
+bool CPFA_loop_functions::IsCollidingWithNestDiscrete(argos::CVector2 p) {
 	argos::Real nestRadiusPlusBuffer = NestRadius + FoodRadius;
 	argos::Real NRPB_squared = nestRadiusPlusBuffer * nestRadiusPlusBuffer;
 
 	return ((p - NestPosition).SquareLength() < NRPB_squared);
 }
 
+bool CPFA_loop_functions::IsCollidingWithNestPDF(argos::CVector2 p) {
+  return ((argos::CVector2(p.GetX(), 0) - NestPosition).SquareLength() <= 1 ||
+      (argos::CVector2(0, p.GetY()) - NestPosition).SquareLength() <= 1);
+}
+
 bool CPFA_loop_functions::IsCollidingWithFood(argos::CVector2 p) {
+  if (FoodPDF == 0) {
+    return IsCollidingWithDiscreteFood(p);
+  } else {
+    return IsCollidingWithPDFFood(p);
+  }
+}
+
+bool CPFA_loop_functions::IsCollidingWithDiscreteFood(argos::CVector2 p) {
 	argos::Real foodRadiusPlusBuffer = 2.0 * FoodRadius;
 	argos::Real FRPB_squared = foodRadiusPlusBuffer * foodRadiusPlusBuffer;
 
@@ -592,6 +701,15 @@ bool CPFA_loop_functions::IsCollidingWithFood(argos::CVector2 p) {
 		if((p - FoodList[i].Position()).SquareLength() < FRPB_squared) return true;
 	}
 
+	return false;
+}
+
+bool CPFA_loop_functions::IsCollidingWithPDFFood(argos::CVector2 p) {
+	for(size_t i = 0; i < SectorList.size(); ++i) {
+    if (SectorList.at(i).ContainsPoint(p)) {
+      return true;
+    }
+	}
 	return false;
 }
 
@@ -680,7 +798,13 @@ void CPFA_loop_functions::LogControllerTarget(argos::CVector2 t) {
 }
 
 bool CPFA_loop_functions::IsFoodHere(const argos::CVector2& p, const argos::Real& tol) {
-  return IsDiscreteFoodHere(p, tol);
+  bool foodIsHere;
+  if (FoodPDF == 0) {
+    foodIsHere = IsDiscreteFoodHere(p, tol);
+  } else {
+    foodIsHere = IsPDFFoodHere(p);
+  }
+  return foodIsHere;
 }
 
 bool CPFA_loop_functions::IsDiscreteFoodHere(const argos::CVector2& p, const argos::Real& tol) {
@@ -722,8 +846,73 @@ bool CPFA_loop_functions::IsDiscreteFoodHere(const argos::CVector2& p, const arg
   return foundFood;
 }
 
-bool CPFA_loop_functions::IsPDFFoodHere(const argos::CVector2& p, const argos::Real& tol) {
-  argos::Real x;
+bool CPFA_loop_functions::IsPDFFoodHere(const argos::CVector2& p) {
+  bool foundFood = false;
+  argos::CRange<argos::Real> prob(0,1);
+  for (size_t i = 0; i < SectorList.size(); ++i) {
+    if (SectorList.at(i).ContainsPoint(p)) {
+      argos::Real dart = RNG->Uniform(prob);
+      argos::LOG << "Dart: " << dart << "\n";
+      if (dart < SectorList.at(i).GetProbability()) {
+        argos::LOG << "Awarding seed.\n";
+        foundFood = true;
+      }
+      break;
+    }
+  }
+
+  return foundFood;
 }
+
+size_t CPFA_loop_functions::ResourceDensity(const argos::CVector2& p) {
+  size_t foodFound;
+  if (FoodPDF == 0) {
+    foodFound = DiscreteResourceDensity(p);
+  } else {
+    foodFound = PDFResourceDensity(p);
+  }
+  return foodFound;
+}
+
+
+size_t CPFA_loop_functions::DiscreteResourceDensity(const argos::CVector2& p) {
+
+  size_t foodFound = 0;
+	argos::CVector2 distance;
+
+	for(size_t i = 0; i < FoodList.size(); ++i) {
+		distance = p - FoodList[i].Position();
+
+		if(distance.SquareLength() < SearchRadiusSquared*2) {
+			foodFound++;
+			FoodColoringList[i] = argos::CColor::ORANGE;
+      //ResourceDensityDelay = SimulationTick() + SimulationTicksPerSecond() * 10;
+			ResourceDensityDelay = GetSpace().GetSimulationClock() +
+        GetSimulator().GetPhysicsEngine("default").GetInverseSimulationClockTick() * 10;
+		}
+	}
+
+  return foodFound;
+}
+
+size_t CPFA_loop_functions::PDFResourceDensity(const argos::CVector2& p) {
+
+  size_t foodFound = 0;
+  size_t num_samples = 8;
+
+  argos::CRange<argos::Real> prob(0,1);
+  for (size_t i = 0; i < SectorList.size(); ++i) {
+    if (SectorList.at(i).ContainsPoint(p)) {
+      for (size_t j = 0; j < num_samples; ++j) {
+        if (RNG->Uniform(prob) < SectorList.at(i).GetProbability()) {
+          foodFound++;
+        }
+      }
+    }
+  }
+
+  return foodFound;
+}
+
 
 REGISTER_LOOP_FUNCTIONS(CPFA_loop_functions, "CPFA_loop_functions")

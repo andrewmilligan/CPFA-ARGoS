@@ -635,18 +635,7 @@ void CPFA_controller::SetLocalResourceDensity() {
 
 	// remember: the food we picked up is removed from the foodList before this function call
 	// therefore compensate here by counting that food (which we want to count)
-	ResourceDensity = 1;
-
-	/* Calculate resource density based on the global food list positions. */
-	for(size_t i = 0; i < LoopFunctions->FoodList.size(); i++) {
-		distance = GetPosition() - LoopFunctions->FoodList[i].Position();
-
-		if(distance.SquareLength() < LoopFunctions->SearchRadiusSquared*2) {
-			ResourceDensity++;
-			LoopFunctions->FoodColoringList[i] = argos::CColor::ORANGE;
-			LoopFunctions->ResourceDensityDelay = SimulationTick() + SimulationTicksPerSecond() * 10;
-		}
-	}
+	ResourceDensity = 1 + LoopFunctions->ResourceDensity(GetPosition());
 
 	/* Set the fidelity position to the robot's current position. */
 	SiteFidelityPosition = GetPosition();
@@ -769,8 +758,6 @@ argos::Real CPFA_controller::GetExponentialDecay(argos::Real value, argos::Real 
 	/* convert time into units of haLoopFunctions-seconds from simulation frames */
 	//time = time / (LoopFunctions->TicksPerSecond / 2.0);
 
-	//LOG << "time: " << time << endl;
-	//LOG << "correlation: " << (value * exp(-lambda * time)) << endl << endl;
 
 	return (value * std::exp(-lambda * time));
 }

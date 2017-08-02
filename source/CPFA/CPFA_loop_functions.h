@@ -2,6 +2,7 @@
 #define CPFA_LOOP_FUNCTIONS_H
 
 #include "Base/SmartFood.h"
+#include "Base/SectorFood.h"
 #include <argos3/core/simulator/loop_functions.h>
 #include <argos3/plugins/robots/foot-bot/simulator/footbot_entity.h>
 #include <argos3/core/simulator/entity/floor_entity.h>
@@ -87,6 +88,7 @@ class CPFA_loop_functions : public argos::CLoopFunctions
 		size_t DrawTrails;
 		size_t DrawTargetRays;
 		size_t FoodDistribution;
+    size_t FoodPDF;
 		size_t FoodItemCount;
 		size_t NumberOfClusters;
 		size_t ClusterWidthX;
@@ -112,6 +114,7 @@ class CPFA_loop_functions : public argos::CLoopFunctions
 
 		/* list variables for food & pheromones */
 		std::vector<SmartFood> FoodList;
+		std::vector<SectorFood> SectorList;
 		std::vector<argos::CColor>   FoodColoringList;
         map<string, argos::CVector2> FidelityList; 
 		std::vector<Pheromone>   PheromoneList;
@@ -125,21 +128,31 @@ class CPFA_loop_functions : public argos::CLoopFunctions
 		argos::CVector2 NestPosition;
 
     bool IsFoodHere(const argos::CVector2& p, const argos::Real& tol);
+    size_t ResourceDensity(const argos::CVector2& p);
 
 	private:
 
 		/* private helper functions */
+		void ClusterFoodDistributionPDF();
+
 		void RandomFoodDistribution();
 		void ClusterFoodDistribution();
 		void PowerLawFoodDistribution();
 		bool IsOutOfBounds(argos::CVector2 p, size_t length, size_t width);
 		bool IsCollidingWithNest(argos::CVector2 p);
+		bool IsCollidingWithNestDiscrete(argos::CVector2 p);
+		bool IsCollidingWithNestPDF(argos::CVector2 p);
 		bool IsCollidingWithFood(argos::CVector2 p);
+		bool IsCollidingWithDiscreteFood(argos::CVector2 p);
+		bool IsCollidingWithPDFFood(argos::CVector2 p);
 		double score;
 		int PrintFinalScore;
 
     bool IsDiscreteFoodHere(const argos::CVector2& p, const argos::Real& tol);
-    bool IsPDFFoodHere(const argos::CVector2& p, const argos::Real& tol);
+    bool IsPDFFoodHere(const argos::CVector2& p);
+
+    size_t DiscreteResourceDensity(const argos::CVector2& p);
+    size_t PDFResourceDensity(const argos::CVector2& p);
 
     std::vector<size_t> cluster_association_counts;
     std::vector<size_t> active_cluster_ids;

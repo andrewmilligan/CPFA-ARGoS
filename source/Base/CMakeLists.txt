@@ -11,6 +11,9 @@ add_library(Food           SHARED Food.h
 add_library(SmartFood      SHARED SmartFood.h
                                   SmartFood.cpp)
 
+add_library(SectorFood     SHARED SectorFood.h
+                                  SectorFood.cpp)
+
 add_library(Pheromone      SHARED Pheromone.h
                                   Pheromone.cpp)
 
@@ -25,6 +28,7 @@ target_link_libraries(BaseController
 
 target_link_libraries(Food)
 target_link_libraries(SmartFood)
+target_link_libraries(SectorFood)
 target_link_libraries(Pheromone)
 
 ###############################################
